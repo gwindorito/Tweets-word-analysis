@@ -1,0 +1,77 @@
+import numpy as np
+import pandas as pd
+from PIL import Image
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+import re
+
+class color:
+   PURPLE = '\033[95m'
+   CYAN = '\033[96m'
+   DARKCYAN = '\033[36m'
+   BLUE = '\033[94m'
+   GREEN = '\033[92m'
+   YELLOW = '\033[93m'
+   RED = '\033[91m'
+   BOLD = '\033[1m'
+   UNDERLINE = '\033[4m'
+   END = '\033[0m'
+
+excel = pd.read_excel("DBTweets.xlsx")
+tweets = excel.AT
+txt = tweets[1]
+for i in range(1, len(tweets)):
+        txt = txt + tweets[i] + " "
+txt=txt.lower()
+
+def contar(str):
+    count = dict()
+    palabras = str.split()
+    for word in palabras:
+        if word in count:
+            count[word] = count[word] + 1
+        else:
+            count[word] = 1
+    return count
+cuentas = contar(txt)
+
+def repeticiones(dict):
+    for keys in dict:
+        if dict[keys] == max(dict.values()):
+            print('La palabra que más se repite es', color.RED+ keys + color.END,', con un valor de: ', dict[keys])
+repeticiones(cuentas)
+
+#Para crear el wordcloud
+def create_word_cloud(string,int):
+   maskArray = np.array(Image.open("mascara.png"))
+   cloud = WordCloud(background_color = "white", max_words = 200, mask = maskArray, stopwords = set(STOPWORDS))
+   cloud.generate(string)
+   cloud.to_file("wordCloud"+str(int)+".png")
+create_word_cloud(txt,1)
+
+#Esta parte del código es para quitar los conectores, que OBVIAMENTE son los que más se van a repetir
+#Dando relevancia a palabras más significativas
+filtrar = dict()
+for keys in cuentas:
+    if len(keys)>3:
+        filtrar[keys] = cuentas[keys]
+repeticiones(filtrar)
+def generartxt(dict):
+    par = ''
+    for keys in filtrar:
+        par = par + keys+ ' '
+    return par
+textofiltrado= generartxt(filtrar)
+
+#Ahora quitamos las URLs, no nos sirven de mucho (Creo), con algunos valores raritos
+def quitar_urls (vTEXT):
+    vTEXT = re.sub(r'(https|http)?:\/\/(\w|\.|\/|\?|\=|\&|\%)*\b', '', vTEXT, flags=re.MULTILINE)
+    vTEXT = re.sub(r'\x1a', '', vTEXT, flags=re.MULTILINE)
+    return(vTEXT)
+sin_URLs = quitar_urls(textofiltrado)
+txtfinal = contar(sin_URLs)
+repeticiones(txtfinal)
+
+txtfinal = sorted(txtfinal.items(),reverse = True,  key=lambda item: item[1])
+txtfinal
+
+create_word_cloud(sin_URLs,2)
